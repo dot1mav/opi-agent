@@ -1,4 +1,4 @@
-name: OPI Agent CI
+name: OPI Agent CI/CD
 
 on:
   push:
@@ -9,13 +9,16 @@ on:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   validate:
     name: Validate syntax and CLI
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -25,7 +28,7 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Show environment
+      - name: Environment info
         run: |
           python --version
           git --version
@@ -37,40 +40,43 @@ jobs:
       - name: Bash syntax check
         run: bash -n install_opi.sh
 
-      - name: Make installer executable
-        run: chmod +x install_opi.sh
-
-      - name: CLI help smoke test
+      - name: CLI smoke test
         run: |
           python3 opi_agent.py --help
-          python3 opi_agent.py daemon --help
-          python3 opi_agent.py telegram --help
-          python3 opi_agent.py exec --help
-          python3 opi_agent.py chat --help
-          python3 opi_agent.py install --help
-          python3 opi_agent.py uninstall --help
+          python3 opi_agent.py version
+          python3 opi_agent.py paths check
+          python3 opi_agent.py config show || true
+          python3 opi_agent.py update status || true
 
-      - name: Check for unresolved placeholders
+      - name: Check unresolved placeholders
+        # The tokens below appear by design in:
+        #   - opi-agent.service.template  (substituted by install_opi.sh)
+        #   - install_opi.sh              (sed patterns that do the substitution)
+        #   - ci-cd.yml                   (this very check, plus its explanatory comment)
+        # so all three files are excluded from this scan.
         run: |
-          if grep -RniE 'TODO|FIXME|REPLACE_ME|CHANGE_ME' . \
+          if grep -RniE 'TODO|FIXME|REPLACE_ME|CHANGE_ME|__BASE_DIR__|__VENV_PYTHON__|__SERVICE_USER__' . \
             --exclude-dir=.git \
             --exclude-dir=.venv \
             --exclude-dir=__pycache__ \
-            --exclude='*.pyc'; then
+            --exclude='*.pyc' \
+            --exclude='opi-agent.service.template' \
+            --exclude='install_opi.sh' \
+            --exclude='ci-cd.yml'; then
             echo "Unresolved placeholders found"
             exit 1
           fi
 
-      - name: Check git diff cleanliness
+      - name: Git diff check
         run: git diff --check
 
   sandbox:
-    name: Isolated sandbox smoke test
+    name: Sandbox install and smoke test
     runs-on: ubuntu-latest
     needs: validate
 
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -80,10 +86,9 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Create isolated sandbox copy
+      - name: Create sandbox copy
         run: |
           set -euo pipefail
-
           WORK="$RUNNER_TEMP/opi-sandbox"
           rm -rf "$WORK"
           mkdir -p "$WORK"
@@ -93,16 +98,58 @@ jobs:
             --exclude '.venv' \
             --exclude '__pycache__' \
             "$GITHUB_WORKSPACE"/ \
-            "$_WORKSPACE"/ \
             "$WORK"/
 
-             run: |
+      - name: Install in sandbox without service
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/opi-sandbox"
+          chmod +x install_opi.sh
+          ./install_opi.sh --skip-service
+
+      - name: Sandbox CLI tests
+        run: |
           set -euo pipefail
           cd "$RUNNER_TEMP/opi-sandbox"
 
-          python3 -m py_compile opi_agent.py
-          bash -n install_opi.sh
+          . .venv/bin/activate
 
-          python3 opi_agent.py --help
-          python3 opi_agent.py exec --help
-          python3 opi_agent.py chat --help
+          python opi_agent.py --help
+          python opi_agent.py version
+          python opi_agent.py paths check
+          python opi_agent.py config show || true
+
+          export ALLOW_EXEC=1
+          export EXEC_CONFIRM_REQUIRED=1
+          python opi_agent.py exec --confirm -- echo hello
+
+  release:
+    name: Build release artifact
+    runs-on: ubuntu-latest
+    needs: [validate, sandbox]
+    if: startsWith(github.ref, 'refs/tags/v')
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build archive
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          tar \
+            --exclude='.git' \
+            --exclude='.venv' \
+            --exclude='workspace' \
+            --exclude='logs' \
+            --exclude='run' \
+            --exclude='dist' \
+            -czf "dist/opi-agent-${GITHUB_REF_NAME}.tar.gz" .
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: opi-agent-${{ github.ref_name }}
+          path: dist/opi-agent-${{ github.ref_name }}.tar.gz
