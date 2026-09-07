@@ -1,0 +1,11 @@
+# opi-agent — runtime paths must never be overwritten by git
+.env
+workspace/
+logs/
+run/
+.venv/
+__pycache__/
+*.pyc
+*.log
+*.swp
+.DS_Store
