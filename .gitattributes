@@ -1,0 +1,33 @@
+# Line endings ---------------------------------------------------------------
+# This project targets Linux/systemd/POSIX. Force LF for everything that gets
+# executed, parsed by POSIX tools, or interpreted at runtime, and disable
+# auto-normalization so git never silently rewrites line endings.
+*   -text
+
+# Shell, Python, YAML (incl. CI), systemd unit, env template, dotfiles.
+*.sh             text eol=lf
+*.py             text eol=lf
+*.yml            text eol=lf
+*.yaml           text eol=lf
+*.service        text eol=lf
+*.template       text eol=lf
+.env.example     text eol=lf
+.gitignore     text eol=lf
+.gitattributes   text eol=lf
+
+# Markdown can legitimately differ per contributor (Markdown rendering is
+# EOL-tolerant). Use plain `text` so git auto-normalizes on commit and we
+# avoid noisy diffs without pinning a specific EOL.
+*.md   text
+
+# Linguist hints ------------------------------------------------------------
+# The repo is mostly a small Python + Bash project; without these hints the
+# language stats on GitHub are dominated by the two long Markdown documents.
+*.md   linguist-documentation
+README.md   linguist-documentation
+agent.md    linguist-documentation
+
+# Diff / merge ---------------------------------------------------------------
+# .env holds secrets and must never enter a textual diff (also gitignored,
+# but a defensive `diff` driver costs nothing).
+.env   diff=env
