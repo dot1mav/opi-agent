@@ -1,5 +1,5 @@
 [Unit]
-Description=OPI Agent
+Description=opi-agent Telegram Bot
 After=network-online.target
 Wants=network-online.target
 
@@ -9,9 +9,7 @@ User=__SERVICE_USER__
 Group=__SERVICE_USER__
 WorkingDirectory=__BASE_DIR__
 EnvironmentFile=__BASE_DIR__/.env
-ExecStart=__VENV_PYTHON__ __BASE_DIR__/opi_agent.py daemon
-Restart=on-failure
-RestartSec=3
+ExecStart=__VENV_PYTHON__ -m opi_agent.cli telegram
 WatchdogSec=30
 
 NoNewPrivileges=true
@@ -19,18 +17,20 @@ ProtectSystem=strict
 ProtectHome=read-only
 PrivateTmp=true
 PrivateDevices=true
-ProtectKernelTunables=true
-ProtectKernelModules=true
 ProtectControlGroups=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+RestrictNamespaces=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
 LockPersonality=true
 MemoryDenyWriteExecute=true
-RestrictSUIDSGID=true
-RestrictNamespaces=true
-SystemCallArchitectures=native
-SystemCallFilter=@system-service
-CapabilityBoundingSet=
-AmbientCapabilities=
+
 ReadWritePaths=__BASE_DIR__/workspace __BASE_DIR__/logs __BASE_DIR__/run
+ReadWritePaths=__BASE_DIR__/.env
+
+AmbientCapabilities=
+CapabilityBoundingSet=
 
 [Install]
 WantedBy=multi-user.target

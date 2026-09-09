@@ -1,0 +1,88 @@
+[project]
+name = "opi-agent"
+version = "0.1.0"
+description = "Agent runtime for Orange Pi single-board computers"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "aiohttp>=3.9",
+    "aiohttp-socks>=0.9",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4",
+    "pytest-cov>=4.1",
+    "ruff>=0.1.0",
+    "mypy>=1.7",
+    "bandit>=1.7",
+    "pip-audit>=2.6",
+]
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "N",   # pep8-naming
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "SIM", # flake8-simplify
+    "T20", # flake8-print
+]
+ignore = [
+    "S101", # assert statements (used in tests)
+    "T201", # print statements (CLI tool)
+]
+exclude = [".venv", "__pycache__", "dist", "build", "*.pyc"]
+
+[tool.ruff.lint.per-file-ignores]
+"opi_agent/schemas.py" = ["E113"]
+"opi_agent/service.py" = ["E113"]
+"opi_agent/cli.py" = ["E113"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+no_implicit_optional = true
+strict_optional = true
+show_error_codes = true
+pretty = true
+
+[[tool.mypy.overrides]]
+module = "systemd.*"
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short --cov=opi_agent --cov-report=term-missing"
+filterwarnings = [
+    "ignore::DeprecationWarning",
+]
+
+[tool.bandit]
+exclude_dirs = [".venv", "tests", "__pycache__"]
+skips = ["B101", "B601"]  # assert_used, shell_check (we control shell=False)
+
+[tool.coverage.run]
+source = ["opi_agent"]
+omit = ["tests/*", "*/__pycache__/*"]

@@ -1,0 +1,13 @@
+opi_agent\service.py:18: error: Module "opi_agent.config" has no attribute
+"ENV_PATH"  [attr-defined]
+    from opi_agent.config import ENV_PATH, get_env
+    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+opi_agent\cli.py:6: error: Module "opi_agent.config" has no attribute
+"ENV_PATH"  [attr-defined]
+    from opi_agent.config import (
+    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+opi_agent\cli.py:146: error: Incompatible types in assignment (expression has
+type "str | None", variable has type "str")  [assignment]
+                value = config_get(args.key)
+                        ^~~~~~~~~~~~~~~~~~~~
+Found 3 errors in 2 files (checked 10 source files)

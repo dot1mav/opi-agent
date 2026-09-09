@@ -1,0 +1,16 @@
+# opi-agent development / CI dependencies
+# Install with: pip install -r requirements.txt -r requirements-dev.txt
+
+# Testing
+pytest>=7.4,<9.0
+pytest-cov>=4.1,<6.0
+
+# Linting and formatting
+ruff>=0.1.0
+
+# Type checking
+mypy>=1.7
+
+# Security
+bandit>=1.7
+pip-audit>=2.6

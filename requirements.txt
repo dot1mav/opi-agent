@@ -1,0 +1,9 @@
+# opi-agent runtime dependencies
+# Installed into the venv by install_opi.sh — never use global pip.
+#
+# Core
+aiohttp>=3.9,<4.0
+aiohttp-socks>=0.9,<1.0
+
+# Development / CI (install with: pip install -r requirements.txt -r requirements-dev.txt)
+# Kept separate to keep the production venv minimal.
