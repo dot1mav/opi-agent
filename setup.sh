@@ -14,6 +14,10 @@ usage() {
     echo "  update     Clean update: preserves .env, refreshes all other files and dependencies"
     echo "  remove     Stop and remove opi-agent and its services"
     echo ""
+    echo "Plugins (can be added to install/update):"
+    echo "  --tailscale    Install and configure Tailscale"
+    echo "  --freestyle    Install freestyle.sh management script"
+    echo ""
     echo "Options:"
     echo "  -p PATH    Custom installation path (default: $INSTALL_DIR)"
     exit 1
@@ -21,18 +25,38 @@ usage() {
 
 # Default path
 TARGET_DIR=$INSTALL_DIR
+INSTALL_TAILSCALE=0
+INSTALL_FREESTYLE=0
 
 # Parse arguments
 ACTION=""
 while [[ $# -gt 0 ]]; do
     case "$1" in
         -p) TARGET_DIR="$2"; shift 2 ;;
+        --tailscale) INSTALL_TAILSCALE=1; shift ;;
+        --freestyle) INSTALL_FREESTYLE=1; shift ;;
         install|update|remove) ACTION="$1"; shift ;;
         *) usage ;;
     esac
 done
 
 if [[ -z "$ACTION" ]]; then usage; fi
+
+# --- Plugin Handlers ---
+
+install_tailscale() {
+    echo "Installing Tailscale..."
+    curl -fsSL https://tailscale.com/install.sh | sh
+}
+
+install_freestyle() {
+    echo "Installing freestyle.sh..."
+    local FREESTYLE_URL="https://raw.githubusercontent.com/dot1mav/freestyle/main/freestyle.sh"
+    curl -sSL "$FREESTYLE_URL" -o /usr/local/bin/freestyle.sh
+    chmod +x /usr/local/bin/freestyle.sh
+}
+
+# --- Main Actions ---
 
 case "$ACTION" in
     install)
@@ -44,6 +68,9 @@ case "$ACTION" in
         fi
         git clone "$REPO_URL" "$TARGET_DIR"
         bash "$TARGET_DIR/$SCRIPT_NAME"
+        
+        if [[ "$INSTALL_TAILSCALE" -eq 1 ]]; then install_tailscale; fi
+        if [[ "$INSTALL_FREESTYLE" -eq 1 ]]; then install_freestyle; fi
         ;;
     update)
         if [[ ! -d "$TARGET_DIR/.git" ]]; then
@@ -81,6 +108,9 @@ case "$ACTION" in
         echo "Restarting services..."
         systemctl restart opi-agent.service 2>/dev/null || true
         systemctl restart opi-agent-telegram.service 2>/dev/null || true
+        
+        if [[ "$INSTALL_TAILSCALE" -eq 1 ]]; then install_tailscale; fi
+        if [[ "$INSTALL_FREESTYLE" -eq 1 ]]; then install_freestyle; fi
         
         echo "Update completed successfully."
         ;;
