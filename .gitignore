@@ -1,5 +1,6 @@
 # opi-agent — runtime paths must never be overwritten by git
 .env
+.env.*
 workspace/
 logs/
 run/
@@ -9,3 +10,23 @@ __pycache__/
 *.log
 *.swp
 .DS_Store
+
+# Testing and Coverage
+tests/
+.coverage
+.coverage.*
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+
+# Reports
+bandit-report.json
+pip-audit-report.json
+mypy_output.txt
+
+# Packaging
+*.egg-info/
+dist/
+build/
+
